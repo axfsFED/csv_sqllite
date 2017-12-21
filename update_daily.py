@@ -1,6 +1,6 @@
 '''
 Created on 2017年12月21日
-
+每日下午4:30更新数据
 @author: 3xtrees
 '''
 import os
@@ -10,7 +10,7 @@ from sqlalchemy import *
 import traceback
 import datetime
 from WindPy import *  # 导入wind接口
-
+import datetime
 #=========================================================================
 # 获取指定目录下所有的csv文件
 #=========================================================================
@@ -51,11 +51,14 @@ def csv2sqllite(fileName, tableName, engine):
 
 if __name__ == '__main__':
     start_time = datetime.datetime.now()
-    #------------------------------------------------------------------------------ 开始 
+    #------------------------------------------------------------------------------ 开始
+    #判断当天是否是交易日，如果是更新数据，如果不是不做操作 
     w.start()
     now = datetime.datetime.now()
     date_str1 = now.strftime("%Y-%m-%d")
     date_str2 = now.strftime("%Y%m%d")
+    #获取最近一次的更新时间
+    #对最近一次更新时间至当前时间之间的数据进行逐天更新
     #------------------------------------------------------------------------- 获取当天A股全体股票列表和停牌股票
     _wss = None
     try:
@@ -65,8 +68,12 @@ if __name__ == '__main__':
         un_paused_stocks_current = list(set(all_stocks_current) - set(paused_stocks_current))
         _wss = w.wss(un_paused_stocks_current, "pre_close,open,high,low,close,volume,amt,chg,pct_chg,vwap,turn,mkt_cap_ashare,val_bshrmarketvalue,mkt_cap_ard,float_a_shares,share_liqb,total_shares,pe_lyr,pb_lf,ps_lyr,pcf_nflyr",
               "tradeDate=20171219;priceAdj=F;cycle=D;unit=1")
-        df_stocks = pd.DataFrame(_wss.Data, index=_wss.Fields,columns=all_stocks_current).T
+        df_stocks = pd.DataFrame(_wss.Data, index=_wss.Fields,columns=un_paused_stocks_current).T
         print(df_stocks)
+        #将每一行数据插入对应表中
+        for stock_code in df_stocks.index:
+            print(df_stocks.loc[stock_code])
+            #首先判断数据库中是否存在stock_code表，如果存在的话就插入数据，如果不存在的话就创建对应的表，再插入数据
     except Exception:
         traceback.print_exc()
     #------------------------------------------------------------------------------ 结束

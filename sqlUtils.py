@@ -104,7 +104,9 @@ def get_class(table_name):
     return GenericTable
 
 
-test = get_class('000001.SZ')
+
+
+#test = get_class('000001.SZ')
 #new_record = test(update_date='2017-12-21', is_latest=1)
 #new_record = UPDATE_HISTORY(update_date='2017-12-21', is_latest=1)
 # session.add(new_record)
@@ -112,10 +114,10 @@ test = get_class('000001.SZ')
 
 
 # 条件查询和更改
-result = session.query(test).filter(
-    test.date == '2017-12-20').all()
-if len(result) > 0:
-    print(result[0].total_shares)
+# result = session.query(test).filter(
+#     test.date == '2017-12-20').all()
+# if len(result) > 0:
+#     print(result[0].total_shares)
 # for h in hi:
 #     setattr(h, 'selected_code', 'updated')
 #     session.commit()

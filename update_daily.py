@@ -92,18 +92,26 @@ if __name__ == '__main__':
             logging.info("当前未到17点，数据将更新至前一交易日:%s" % (_tds.Data[0][-2]))
             update_to_date = _tds.Data[0][-2]
     logging.info("开始更新数据...")
+    #------------------------------------------------------------------------------ 获取当前数据库中所有的表
+    conn = sqlite3.connect('./Stocks_Market_Data_WIND.db')
+    cursor = conn.cursor()
+    sql = ''' SELECT name FROM sqlite_master WHERE type='table' '''
+    results = cursor.execute(sql)
+    all_tables = results.fetchall()
+    all_tables_list = []
+    for table in all_tables:
+        all_tables_list.append(table[0])
 
     _tds = w.tdays(update_start_date, update_to_date, "")
     for date in _tds.Data[0][1:2]:  # 对每天的数据进行更新
         d_str1 = date.strftime("%Y-%m-%d")
         d_str2 = date.strftime("%Y%m%d")
         try:
-            all_stocks_current = w.wset("sectorconstituent", "date=" +
-                                        d_str1 + ";sectorid=a001010100000000").Data[1]
+
             paused_stocks_current = w.wset(
                 "tradesuspend", "startdate=" + d_str1 + ";enddate=" + d_str1 + ";field=date,wind_code").Data[1]
             un_paused_stocks_current = list(
-                set(all_stocks_current) - set(paused_stocks_current))
+                set(all_tables_list) - set(paused_stocks_current))
             _wss = w.wss('000001.SZ', "pre_close,open,high,low,close,volume,amt,chg,pct_chg,vwap,turn,mkt_cap_ashare,val_bshrmarketvalue,mkt_cap_ard,float_a_shares,share_liqb,total_shares,pe_lyr,pb_lf,ps_lyr,pcf_nflyr",
                          "tradeDate=" + d_str2 + ";priceAdj=F;cycle=D;unit=1")
             df_stocks = pd.DataFrame(
@@ -134,7 +142,7 @@ if __name__ == '__main__':
             df_stocks['MA_60'] = MA_60
             df_stocks['MA_120'] = MA_120
             df_stocks['MA_240'] = MA_240
-            
+
             df_stocks = df_stocks.fillna('--')
             # 将每一行数据插入对应表中
             # for stock_code in df_stocks.index:
@@ -144,6 +152,13 @@ if __name__ == '__main__':
                              if_exists='append', index=False)
         except Exception:
             traceback.print_exc()
+
+    all_stocks_current = w.wset("sectorconstituent", "date=" +
+                                d_str1 + ";sectorid=a001010100000000").Data[1]
+    stocks_not_stored = list(
+        set(all_stocks_current) - set(all_tables_list)) #获取还没有入库的股票代码，特殊处理
+    print(stocks_not_stored)
+    
     logging.info("更新数据完成!")
     logging.info("当前WIND获取A股股票个数/数据库中股票个数：%d/%d")
     end_time = datetime.datetime.now()
